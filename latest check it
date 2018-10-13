@@ -1,0 +1,68 @@
+Step 1 – Creating a MySQL Database and User for WordPress
+The first step that we will take is a preparatory one. WordPress uses MySQL to manage and store site and user information. We have MySQL installed already, but we need to make a database and a user for WordPress to use.
+
+To get started, log into the MySQL root (administrative) account by issuing this command:
+
+mysql -u root -p
+You will be prompted for the password you set for the MySQL root account when you installed the software.
+
+First, we can create a separate database that WordPress will control. You can call this whatever you would like, but we will be using wordpress in this guide to keep it simple. Create the database for WordPress by typing:
+
+CREATE DATABASE wordpress DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+Note: Every MySQL statement must end in a semi-colon (;). Check to make sure this is present if you are running into any issues.
+
+Next, we are going to create a separate MySQL user account that we will use exclusively to operate on our new database. Creating one-function databases and accounts is a good idea from a management and security standpoint. We will use the name wordpressuser in this guide. Feel free to change this if you'd like.
+
+We are going to create this account, set a password, and grant access to the database we created. We can do this by typing the following command. Remember to choose a strong password here for your database user:
+
+GRANT ALL ON wordpress.* TO 'wordpressuser'@'localhost' IDENTIFIED BY 'password';
+You now have a database and user account, each made specifically for WordPress. We need to flush the privileges so that the current instance of MySQL knows about the recent changes we've made:
+
+FLUSH PRIVILEGES;
+Exit out of MySQL by typing:
+
+EXIT;
+Step 2 – Installing Additional PHP Extensions
+When setting up our LAMP stack, we only required a very minimal set of extensions in order to get PHP to communicate with MySQL. WordPress and many of its plugins leverage additional PHP extensions.
+
+We can download and install some of the most popular PHP extensions for use with WordPress by typing:
+
+sudo apt update
+sudo apt install php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
+Note: Each WordPress plugin has its own set of requirements. Some may require additional PHP packages to be installed. Check your plugin documentation to discover its PHP requirements. If they are available, they can be installed with apt as demonstrated above.
+
+We will restart Apache to load these new extensions in the next section. If you are returning here to install additional plugins, you can restart Apache now by typing:
+
+sudo systemctl restart apache2
+Step 3 – Adjusting Apache's Configuration to Allow for .htaccess Overrides and Rewrites
+Next, we will be making a few minor adjustments to our Apache configuration. Based on the prerequisite tutorials, you should have a configuration file for your site in the /etc/apache2/sites-available/ directory. We'll use /etc/apache2/sites-available/wordpress.conf as an example here, but you should substitute the path to your configuration file where appropriate.
+
+Additionally, we will use /var/www/wordpress as the root directory of our WordPress install. You should use the web root specified in your own configuration.
+
+Note: It's possible you are using the 000-default.conf default configuration (with /var/www/html as your web root). This is fine to use if you're only going to host one website on this server. If not, it's best to split the necessary configuration into logical chunks, one file per site.
+
+Enabling .htaccess Overrides
+Currently, the use of .htaccess files is disabled. WordPress and many WordPress plugins use these files extensively for in-directory tweaks to the web server's behavior.
+
+Open the Apache configuration file for your website:
+
+sudo nano /etc/apache2/sites-available/wordpress.conf
+To allow .htaccess files, we need to set the AllowOverride directive within a Directory block pointing to our document root. Add the following block of text inside the VirtualHost block in your configuration file, being sure to use the correct web root directory:
+
+/etc/apache2/sites-available/wordpress.conf
+<Directory /var/www/wordpress/>
+    AllowOverride All
+</Directory>
+When you are finished, save and close the file.
+
+Enabling the Rewrite Module
+Next, we can enable mod_rewrite so that we can utilize the WordPress permalink feature:
+
+sudo a2enmod rewrite
+Enabling the Changes
+Before we implement the changes we've made, check to make sure we haven't made any syntax errors:
+
+sudo apache2ctl configtest
+The output might have a message that looks like this:
+
+Output
